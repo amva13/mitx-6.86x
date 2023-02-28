@@ -159,19 +159,28 @@ def average_perceptron(feature_matrix, labels, T):
         the average offset parameter `theta_0` as a floating point number
             (averaged also over T iterations through the feature matrix).
     """
-    theta_0 = 0.0
-    theta = np.zeros(feature_matrix.shape[1])
-    t = np.zeros(feature_matrix.shape[1])
-    t0 = 0.0
-    n = feature_matrix.shape[0]
+    current_theta = np.zeros(feature_matrix.shape[1])
+    current_theta_0 = 0.0
+    
+    # Keep track of the sum through the loops
+    theta_sum = np.zeros(feature_matrix.shape[1])
+    theta_0_sum = 0.0
+    
+    n = feature_matrix.shape[0]     # No of examples
+    
     for t in range(T):
         for i in get_order(feature_matrix.shape[0]):
-            theta, theta_0 = perceptron_single_step_update(feature_matrix[i], labels[i], theta, theta_0)
-            t = np.add(t,theta)
-            t0 += theta_0
-    t = np.divide(t, n*T)
-    t0 /=(n*T)
-    return t,t0
+            current_theta, current_theta_0 = \
+            perceptron_single_step_update(feature_matrix[i,:], labels[i], \
+                                          current_theta, current_theta_0)
+            
+            theta_sum = theta_sum + current_theta
+            theta_0_sum = theta_0_sum + current_theta_0
+            
+    theta_avg = (1/(n*T))*theta_sum
+    theta_0_avg = (1/(n*T))*theta_0_sum
+    
+    return (theta_avg, theta_0_avg)
 
 
 def pegasos_single_step_update(
@@ -201,12 +210,17 @@ def pegasos_single_step_update(
         real valued number with the value of theta_0 after the old updated has
         completed.
     """
-    eps = 1e-8
-    pred = float(label*(np.dot(theta, feature_vector) + theta_0))
-    gradientc = float(label*pred)
-    gradient = (1-L*eta)*theta + eta*label*feature_vector if gradientc <= 1+eps else (1-L*eta)*theta
-    g0 = theta_0 + eta*label if gradientc <= 1+eps else theta_0 
-    return (gradient, g0)
+    current_theta = theta
+    current_theta_0 = theta_0
+    agreement = float(label*(current_theta.dot(feature_vector) + current_theta_0))
+    
+    if agreement <= 1.0:
+        current_theta = (1-eta*L)*current_theta + eta*label*feature_vector
+        current_theta_0 = current_theta_0 + eta*label
+    else:
+        current_theta = (1-eta*L)*current_theta
+        
+    return (current_theta, current_theta_0) 
 
 
 
@@ -237,7 +251,6 @@ def pegasos(feature_matrix, labels, T, L):
         the value of the theta_0, the offset classification parameter, found
         after T iterations through the feature matrix.
     """
-    # import math
     theta_0 = 0.0
     theta = np.zeros(feature_matrix.shape[1])
     ctr = 1
@@ -282,8 +295,8 @@ def classify(feature_matrix, theta, theta_0):
         given theta and theta_0. If a prediction is GREATER THAN zero, it
         should be considered a positive classification.
     """
-    # Your code here
-    return np.array([1 if x>0 else -1 for x in np.sign(np.dot(feature_matrix, theta) + theta_0)])
+    eps = 1e-8
+    return np.array([-1 if abs(x)<eps or x < 0 else 1 for x in np.sign(np.dot(feature_matrix, theta) + theta_0)])
 
 
 def classifier_accuracy(
@@ -356,19 +369,21 @@ def bag_of_words(texts, remove_stopword=False):
     # # Your code here
     # raise NotImplementedError
 
-    indices_by_word = {}  # maps word to unique index
+    with open("stopwords.txt",'r',encoding='utf8') as stoptext:
+        stop_words = stoptext.read()
+        stop_words = stop_words.replace("\n"," ").split()
+        
+    dictionary = {} # maps word to unique index
     for text in texts:
         word_list = extract_words(text)
         for word in word_list:
-            if word in indices_by_word: continue
-            # if word in stopword: continue
-            indices_by_word[word] = len(indices_by_word)
-
-    return indices_by_word
+            if word not in dictionary and word not in stop_words:
+                dictionary[word] = len(dictionary)
+    return dictionary
 
 
 
-def extract_bow_feature_vectors(reviews, indices_by_word, binarize=True):
+def extract_bow_feature_vectors(reviews, dictionary, binarize=True):
     """
     Args:
         `reviews` - a list of natural language strings
@@ -381,15 +396,14 @@ def extract_bow_feature_vectors(reviews, indices_by_word, binarize=True):
     # # Your code here
     # raise NotImplementedError
 
-    feature_matrix = np.zeros([len(reviews), len(indices_by_word)], dtype=np.float64)
+    num_reviews = len(reviews)
+    feature_matrix = np.zeros([num_reviews, len(dictionary)])
+
     for i, text in enumerate(reviews):
         word_list = extract_words(text)
         for word in word_list:
-            if word not in indices_by_word: continue
-            feature_matrix[i, indices_by_word[word]] = 1
-    # if binarize:
-    #     # Your code here
-    #     raise NotImplementedError
+            if word in dictionary:
+                feature_matrix[i, dictionary[word]] += 1    # Changed binary update to counts 
     return feature_matrix
 
 
