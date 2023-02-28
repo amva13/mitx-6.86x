@@ -95,8 +95,9 @@ def perceptron_single_step_update(
         the updated feature-coefficient parameter `theta` as a numpy array
         the updated offset parameter `theta_0` as a floating point number
     """
-    gradient = label*np.sign(np.dot(current_theta, feature_vector) + current_theta_0)
-    gradient = label if gradient <= 0 else 0
+    e = 1e-8
+    gradient = float(label*np.dot(current_theta, feature_vector) + current_theta_0)
+    gradient = label if abs(gradient) < e or gradient <= 0 else 0.0
     return (current_theta + gradient*feature_vector, current_theta_0 + gradient)
 
 
@@ -123,7 +124,6 @@ def perceptron(feature_matrix, labels, T):
         the offset parameter `theta_0` as a floating point number
             (found also after T iterations through the feature matrix).
     """
-    # Your code here
     theta_0 = 0
     theta = np.zeros(feature_matrix.shape[1])
     for t in range(T):
@@ -159,17 +159,18 @@ def average_perceptron(feature_matrix, labels, T):
         the average offset parameter `theta_0` as a floating point number
             (averaged also over T iterations through the feature matrix).
     """
-    theta_0 = 0
+    theta_0 = 0.0
     theta = np.zeros(feature_matrix.shape[1])
     t = np.zeros(feature_matrix.shape[1])
-    t0 = 0
+    t0 = 0.0
+    n = feature_matrix.shape[0]
     for t in range(T):
         for i in get_order(feature_matrix.shape[0]):
             theta, theta_0 = perceptron_single_step_update(feature_matrix[i], labels[i], theta, theta_0)
             t = np.add(t,theta)
             t0 += theta_0
-    t /=(feature_matrix.shape[0]*T)
-    t0 /=(feature_matrix.shape[0]*T)
+    t = np.divide(t, n*T)
+    t0 /=(n*T)
     return t,t0
 
 
@@ -200,11 +201,11 @@ def pegasos_single_step_update(
         real valued number with the value of theta_0 after the old updated has
         completed.
     """
-    label = np.sign(label)
-    pred = np.sign(np.sign(np.dot(theta, feature_vector) + theta_0))
-    gradientc = label*pred
-    gradient = (1-L*eta)*theta + eta*label*feature_vector if gradientc <= 1 else (1-L*eta)*theta
-    g0 = theta_0 + eta*label if gradientc <= 1 else theta_0 
+    eps = 1e-8
+    pred = float(label*(np.dot(theta, feature_vector) + theta_0))
+    gradientc = float(label*pred)
+    gradient = (1-L*eta)*theta + eta*label*feature_vector if gradientc <= 1+eps else (1-L*eta)*theta
+    g0 = theta_0 + eta*label if gradientc <= 1+eps else theta_0 
     return (gradient, g0)
 
 
@@ -236,13 +237,14 @@ def pegasos(feature_matrix, labels, T, L):
         the value of the theta_0, the offset classification parameter, found
         after T iterations through the feature matrix.
     """
-    import math
-    theta_0 = 0
+    # import math
+    theta_0 = 0.0
     theta = np.zeros(feature_matrix.shape[1])
     ctr = 1
     for t in range(T):
         for i in get_order(feature_matrix.shape[0]):
-            theta, theta_0 = pegasos_single_step_update(feature_matrix[i], labels[i], L, 1.0/math.sqrt(ctr), theta, theta_0)
+            et = 1.0/np.sqrt(ctr)
+            theta, theta_0 = pegasos_single_step_update(feature_matrix[i], labels[i], L, et, theta, theta_0)
             ctr+=1
     return theta, theta_0 
 
