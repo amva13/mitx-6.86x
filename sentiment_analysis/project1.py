@@ -373,17 +373,19 @@ def bag_of_words(texts, remove_stopword=False):
         stop_words = stoptext.read()
         stop_words = stop_words.replace("\n"," ").split()
         
-    dictionary = {} # maps word to unique index
+    indices_by_word = {}  # maps word to unique index
     for text in texts:
         word_list = extract_words(text)
         for word in word_list:
-            if word not in dictionary and word not in stop_words:
-                dictionary[word] = len(dictionary)
-    return dictionary
+            if word in indices_by_word: continue
+            if remove_stopword and word in stop_words: continue
+            indices_by_word[word] = len(indices_by_word)
+
+    return indices_by_word
 
 
 
-def extract_bow_feature_vectors(reviews, dictionary, binarize=True):
+def extract_bow_feature_vectors(reviews, indices_by_word, binarize=True):
     """
     Args:
         `reviews` - a list of natural language strings
@@ -396,14 +398,24 @@ def extract_bow_feature_vectors(reviews, dictionary, binarize=True):
     # # Your code here
     # raise NotImplementedError
 
-    num_reviews = len(reviews)
-    feature_matrix = np.zeros([num_reviews, len(dictionary)])
+    # num_reviews = len(reviews)
+    # feature_matrix = np.zeros([num_reviews, len(dictionary)])
 
+    # for i, text in enumerate(reviews):
+    #     word_list = extract_words(text)
+    #     for word in word_list:
+    #         if word in dictionary:
+    #             feature_matrix[i, dictionary[word]] = 1    # Changed binary update to counts 
+    # return feature_matrix
+    feature_matrix = np.zeros([len(reviews), len(indices_by_word)], dtype=np.float64)
     for i, text in enumerate(reviews):
         word_list = extract_words(text)
         for word in word_list:
-            if word in dictionary:
-                feature_matrix[i, dictionary[word]] += 1    # Changed binary update to counts 
+            if word not in indices_by_word: continue
+            if binarize:
+                feature_matrix[i, indices_by_word[word]] = 1
+            else:
+                feature_matrix[i, indices_by_word[word]] += 1
     return feature_matrix
 
 

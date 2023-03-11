@@ -20,9 +20,9 @@ train_bow_features = p1.extract_bow_feature_vectors(train_texts, dictionary)
 val_bow_features = p1.extract_bow_feature_vectors(val_texts, dictionary)
 test_bow_features = p1.extract_bow_feature_vectors(test_texts, dictionary)
 
-#-------------------------------------------------------------------------------
-# Problem 5
-#-------------------------------------------------------------------------------
+# #-------------------------------------------------------------------------------
+# # Problem 5
+# #-------------------------------------------------------------------------------
 
 toy_features, toy_labels = toy_data = utils.load_toy_data('toy_data.tsv')
 
@@ -85,11 +85,12 @@ plot_toy_results('Pegasos', thetas_pegasos)
 # # fix values for L and T while tuning Pegasos T and L, respective
 # fix_L = 0.01
 # # for t in Ts:
-# for l in Ls:
-#     peg_tune_results_T = utils.tune_pegasos_T(l, Ts, *data)
-#     print('Pegasos valid: tune T', list(zip(Ts, peg_tune_results_T[1])))
-#     print('best = {:.4f}, T={:.4f}'.format(np.max(peg_tune_results_T[1]), Ts[np.argmax(peg_tune_results_T[1])]))
-#     print("used L",l)        
+# # for l in Ls:
+# l = fix_L
+# peg_tune_results_T = utils.tune_pegasos_T(l, Ts, *data)
+# print('Pegasos valid: tune T', list(zip(Ts, peg_tune_results_T[1])))
+# print('best = {:.4f}, T={:.4f}'.format(np.max(peg_tune_results_T[1]), Ts[np.argmax(peg_tune_results_T[1])]))
+# print("used L",l)        
 
 
 # fix_T = Ts[np.argmax(peg_tune_results_T[1])]
@@ -108,15 +109,15 @@ plot_toy_results('Pegasos', thetas_pegasos)
 # against the test dataset. The test data has been provided as
 # test_bow_features and test_labels.
 #-------------------------------------------------------------------------------
-# thetas_perceptron = p1.perceptron(train_bow_features, train_labels, 25)
-# ca = p1.classifier_accuracy(p1.perceptron, train_bow_features, test_bow_features, train_labels, test_labels, T=25)
+# thetas_perceptron = p1.pegasos(train_bow_features, train_labels, 25,10)
+# ca = p1.classifier_accuracy(p1.pegasos, train_bow_features, test_bow_features, train_labels, test_labels, T=25,L=0.01)
 # print(ca)
 #-------------------------------------------------------------------------------
 # Assign to best_theta, the weights (and not the bias!) learned by your most
 # accurate algorithm with the optimal choice of hyperparameters.
 #-------------------------------------------------------------------------------
 
-# best_theta = p1.perceptron(train_bow_features, train_labels, 25)[0] # Your code here
+# best_theta = p1.pegasos(train_bow_features, train_labels, 25, 0.01)[0] # Your code here
 # wordlist   = [word for (idx, word) in sorted(zip(dictionary.values(), dictionary.keys()))]
 # sorted_word_features = utils.most_explanatory_word(best_theta, wordlist)
 # print("Most Explanatory Word Features")
