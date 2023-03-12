@@ -31,14 +31,10 @@ def compute_probabilities(X, theta, temp_parameter):
     Returns:
         H - (k, n) NumPy array, where each entry H[j][i] is the probability that X[i] is labeled as j
     """
-    out = []
-    for x in X:
-        c = max(np.dot(theta[j], np.transpose(x)) for j in range(theta.shape[0]))/temp_parameter
-        denom = sum(np.exp(np.dot(theta[j], np.transpose(x))/temp_parameter - c) for j in range(theta.shape[0]))
-        vec = np.array([np.exp(np.dot(theta[j], np.transpose(x))/temp_parameter - c) for j in range(theta.shape[0])])
-        vec /= denom
-        out.append(vec)
-    return np.transpose(np.array(out))
+    TX = np.matmul(X,np.transpose(theta))/temp_parameter
+    c = np.max(TX,axis=1)
+    eTX = np.exp(TX.T-c)
+    return eTX / np.sum(eTX, axis=0)
 
 def compute_cost_function(X, Y, theta, lambda_factor, temp_parameter):
     """
@@ -59,8 +55,8 @@ def compute_cost_function(X, Y, theta, lambda_factor, temp_parameter):
     epsilon = 1e-8
     total = 0
     probs = compute_probabilities(X, theta, temp_parameter)
-    total += -sum(np.log(probs[i][j]) for i,x in enumerate(X) for j in range(theta.shape[0]) if Y[i] == j and abs(probs[i][j])>epsilon)/X.shape[0] 
-    total += (lambda_factor/2)*sum(theta[j][i]**2 for j in range(len(theta)) for i in range(len(theta[0])))
+    total += -sum(np.log(probs[j][i]) for i,_ in enumerate(X) for j in range(theta.shape[0]) if Y[i] == j and abs(probs[j][i])>epsilon)/X.shape[0] 
+    total += (lambda_factor/2)*np.linalg.norm(theta)**2
     return total
     
 
@@ -81,8 +77,9 @@ def run_gradient_descent_iteration(X, Y, theta, alpha, lambda_factor, temp_param
     Returns:
         theta - (k, d) NumPy array that is the final value of parameters theta
     """
-    #YOUR CODE HERE
-    raise NotImplementedError
+    probs = compute_probabilities(X, theta, temp_parameter)
+    n = X.shape[0]
+    return theta - alpha*(-1/(n*temp_parameter) * np.array([sum(x*(int(Y[i]==m) - probs[m][i]) for i,x in enumerate(X)) for m in range(theta.shape[0])])+ lambda_factor*theta)
 
 def update_y(train_y, test_y):
     """
@@ -101,8 +98,7 @@ def update_y(train_y, test_y):
         test_y_mod3 - (n, ) NumPy array containing the new labels (a number between 0-2)
                     for each datapoint in the test set
     """
-    #YOUR CODE HERE
-    raise NotImplementedError
+    return np.array([x%3 for x in train_y]), np.array([x%3 for x in test_y])
 
 def compute_test_error_mod3(X, Y, theta, temp_parameter):
     """
@@ -119,8 +115,10 @@ def compute_test_error_mod3(X, Y, theta, temp_parameter):
     Returns:
         test_error - the error rate of the classifier (scalar)
     """
-    #YOUR CODE HERE
-    raise NotImplementedError
+    clf = get_classification(X, theta, temp_parameter)
+    y = [x%3 for x in clf]
+    return sum(y[i]!=Y[i] for i in range(Y.shape[0]))/Y.shape[0]
+    
 
 def softmax_regression(X, Y, temp_parameter, alpha, lambda_factor, k, num_iterations):
     """

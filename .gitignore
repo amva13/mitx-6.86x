@@ -132,3 +132,4 @@ dmypy.json
 
 #datasets
 digit-recognition-part1/mnist/Datasets/
+digit-recognition-part1/mnist/part1/theta.pkl.gz
